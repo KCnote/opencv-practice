@@ -1,8 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-
-class MultiPixelViewer:
+class MultiImageViewer:
     def __init__(self, image_path1, image_path2, sync_view=True):
         self.imgs = [cv.imread(image_path1), cv.imread(image_path2)]
 
@@ -462,7 +461,7 @@ class MultiPixelViewer:
 
 
 if __name__ == "__main__":
-    viewer = MultiPixelViewer(
+    viewer = MultiImageViewer(
         "data/cat.png",
         "data/cat.png",
         sync_view=False

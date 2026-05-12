@@ -1,6 +1,10 @@
 import cv2 as cv
-import st_image
+import os
+import ImageUtils
+import MultiImageViewer as view
 
 if __name__ == "__main__":
-    img = st_image.readImage(st_image.getImagePath("cat.png"))
-    st_image.showImage("Cat", img)
+    img = ImageUtils.readImage(ImageUtils.getDataPathWithFile("cat.png"))
+    viewer = view.MultiImageViewer("data/cat.png", "data/cat.png", sync_view=False)
+    viewer.run()
+

@@ -6,7 +6,7 @@ def getDataPath():
     strDir = os.path.join(strRoot, "data")
     return strDir
 
-def getImagePath(path):
+def getDataPathWithFile(path):
     strImage = os.path.join(getDataPath(), path)
     return strImage
 
@@ -18,3 +18,6 @@ def showImage(title, img):
     cv.imshow(title, img)
     cv.waitKey(0)
     cv.destroyAllWindows()
+    
+def writeImage(path, img):
+    cv.imwrite(path, img)

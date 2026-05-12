@@ -1,8 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-
-class PixelViewer:
+class ImageViewer:
     def __init__(self, image_path):
         self.img = cv.imread(image_path)
         if self.img is None:
@@ -252,5 +251,5 @@ class PixelViewer:
 
 
 if __name__ == "__main__":
-    viewer = PixelViewer("data/cat.png")
+    viewer = ImageViewer("data/cat.png")
     viewer.run()
