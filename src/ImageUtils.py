@@ -21,3 +21,6 @@ def showImage(title, img):
     
 def writeImage(path, img):
     cv.imwrite(path, img)
+    
+def convertColorSpace(img, colorCode = cv.COLOR_BGR2GRAY):
+    return cv.cvtColor(img, colorCode)
