@@ -109,6 +109,47 @@ def morphology3x3(img, morphology_type):
     elif morphology_type == MorphologyType.BLACK_HAT:
         return cv.morphologyEx(img, cv.MORPH_BLACKHAT, kernel)
 
+class ThresholdType(Enum):
+    BINARY = 0
+    BINARY_INV = 1
+    TRUNC = 2
+    TOZERO = 3
+    TOZERO_INV = 4
+
+    OTSU = 5
+    ADAPTIVE_MEAN = 6
+    ADAPTIVE_GAUSSIAN = 7
+
+
+def thresholding(img, threshold_type, thresh=127, max_value=255, block_size=11, c=2):
+
+    # Adaptive threshold requires grayscale
+    if len(img.shape) == 3:
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    else:
+        gray = img
+
+    if threshold_type == ThresholdType.BINARY:
+        _, result = cv.threshold(gray, thresh, max_value, cv.THRESH_BINARY)
+    elif threshold_type == ThresholdType.BINARY_INV:
+        _, result = cv.threshold(gray, thresh, max_value, cv.THRESH_BINARY_INV)
+    elif threshold_type == ThresholdType.TRUNC:
+        _, result = cv.threshold(gray, thresh, max_value, cv.THRESH_TRUNC)
+    elif threshold_type == ThresholdType.TOZERO:
+        _, result = cv.threshold(gray, thresh, max_value, cv.THRESH_TOZERO)
+    elif threshold_type == ThresholdType.TOZERO_INV:
+        _, result = cv.threshold(gray, thresh, max_value, cv.THRESH_TOZERO_INV)
+    elif threshold_type == ThresholdType.OTSU:
+        _, result = cv.threshold(gray, 0, max_value, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    elif threshold_type == ThresholdType.ADAPTIVE_MEAN:
+        result = cv.adaptiveThreshold(gray, max_value, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, block_size, c)
+    elif threshold_type == ThresholdType.ADAPTIVE_GAUSSIAN:
+        result = cv.adaptiveThreshold(gray, max_value, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block_size, c)
+
+    return result
+
+
+
 def histogram(img):
 
     channels = img.shape[2] if len(img.shape) == 3 else 1

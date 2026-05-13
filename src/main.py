@@ -9,14 +9,15 @@ import ImageProcessing as ip
 
 if __name__ == "__main__":
     img = ImageUtils.readImage(ImageUtils.getDataPathWithFile("cat.png"))
-    imgErode = ip.morphology3x3(img, ip.MorphologyType.EROSION)
-    imgDilate = ip.morphology3x3(img, ip.MorphologyType.DILATION)
-    imgOpen = ip.morphology3x3(img, ip.MorphologyType.OPENING)
-    imgClose = ip.morphology3x3(img, ip.MorphologyType.CLOSING)
-    imgGradient = ip.morphology3x3(img, ip.MorphologyType.MORPH_GRADIENT)
-    imgTopHat = ip.morphology3x3(img, ip.MorphologyType.TOP_HAT)
-    imgBlackHat = ip.morphology3x3(img, ip.MorphologyType.BLACK_HAT)
+    imgThresholdBinary = ip.thresholding(img, ip.ThresholdType.BINARY)
+    imgThresholdBinaryInv = ip.thresholding(img, ip.ThresholdType.BINARY_INV)
+    imgThresholdTrunc = ip.thresholding(img, ip.ThresholdType.TRUNC)
+    imgThresholdToZero = ip.thresholding(img, ip.ThresholdType.TOZERO)
+    imgThresholdToZeroInv = ip.thresholding(img, ip.ThresholdType.TOZERO_INV)
+    imgThresholdAdaptiveMean = ip.thresholding(img, ip.ThresholdType.ADAPTIVE_MEAN, block_size=11, c=2)
+    imgThresholdAdaptiveGaussian = ip.thresholding(img, ip.ThresholdType.ADAPTIVE_GAUSSIAN, block_size=11, c=2)
+    imgThresholdOtsu = ip.thresholding(img, ip.ThresholdType.OTSU)
 
-    viewer = view.MultiImageViewer.from_images(img, imgErode, imgDilate, imgOpen, imgClose, imgGradient, imgTopHat, imgBlackHat, sync_view=False)
+    viewer = view.MultiImageViewer.from_images(img, imgThresholdBinary, imgThresholdBinaryInv, imgThresholdTrunc, imgThresholdToZero, imgThresholdToZeroInv, imgThresholdAdaptiveMean, imgThresholdAdaptiveGaussian, imgThresholdOtsu, sync_view=False)
     viewer.run()
 
