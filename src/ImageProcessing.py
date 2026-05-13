@@ -64,7 +64,6 @@ from enum import Enum
 
 
 class BlurType(Enum):
-
     UNIFORM_BLUR = 0
     GAUSSIAN_BLUR = 1
     MEDIAN_BLUR = 2
@@ -82,93 +81,33 @@ def filter3x3(img, blur_type):
         return cv.bilateralFilter(img, 9, 75, 75)
 
 class MorphologyType(Enum):
-
     EROSION = 0
     DILATION = 1
-
     OPENING = 2
     CLOSING = 3
-
     MORPH_GRADIENT = 4
-
     TOP_HAT = 5
     BLACK_HAT = 6
 
 
-def morphology(
-    img,
-    morphology_type,
-    ksize=3,
-    iterations=1
-):
+def morphology3x3(img, morphology_type):
 
-    if ksize % 2 == 0:
-        raise ValueError("ksize must be odd")
-
-    kernel = cv.getStructuringElement(
-        cv.MORPH_RECT,
-        (ksize, ksize)
-    )
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
 
     if morphology_type == MorphologyType.EROSION:
-
-        return cv.erode(
-            img,
-            kernel,
-            iterations=iterations
-        )
-
+        return cv.erode(img, kernel, iterations=1)
     elif morphology_type == MorphologyType.DILATION:
-
-        return cv.dilate(
-            img,
-            kernel,
-            iterations=iterations
-        )
-
+        return cv.dilate(img, kernel, iterations=1)
     elif morphology_type == MorphologyType.OPENING:
-
-        return cv.morphologyEx(
-            img,
-            cv.MORPH_OPEN,
-            kernel
-        )
-
+        return cv.morphologyEx(img, cv.MORPH_OPEN, kernel)
     elif morphology_type == MorphologyType.CLOSING:
-
-        return cv.morphologyEx(
-            img,
-            cv.MORPH_CLOSE,
-            kernel
-        )
-
+        return cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
     elif morphology_type == MorphologyType.MORPH_GRADIENT:
-
-        return cv.morphologyEx(
-            img,
-            cv.MORPH_GRADIENT,
-            kernel
-        )
-
+        return cv.morphologyEx(img, cv.MORPH_GRADIENT, kernel)
     elif morphology_type == MorphologyType.TOP_HAT:
-
-        return cv.morphologyEx(
-            img,
-            cv.MORPH_TOPHAT,
-            kernel
-        )
-
+        return cv.morphologyEx(img, cv.MORPH_TOPHAT, kernel)
     elif morphology_type == MorphologyType.BLACK_HAT:
-
-        return cv.morphologyEx(
-            img,
-            cv.MORPH_BLACKHAT,
-            kernel
-        )
-
-    else:
-
-        raise ValueError("Invalid morphology type")
+        return cv.morphologyEx(img, cv.MORPH_BLACKHAT, kernel)
 
 def histogram(img):
 
