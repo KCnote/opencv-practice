@@ -24,3 +24,6 @@ def writeImage(path, img):
     
 def convertColorSpace(img, colorCode = cv.COLOR_BGR2GRAY):
     return cv.cvtColor(img, colorCode)
+
+def resizeImage(img, widthResize, heightResize, interpolation=cv.INTER_AREA):
+    return cv.resize(img, (int(widthResize), int(heightResize)), interpolation=interpolation)
