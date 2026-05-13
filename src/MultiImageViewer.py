@@ -1,9 +1,6 @@
 import cv2 as cv
 import numpy as np
 
-import cv2 as cv
-import numpy as np
-
 
 class MultiImageViewer:
     def __init__(self, imgs, sync_view=True):
@@ -20,7 +17,6 @@ class MultiImageViewer:
                 raise ValueError(f"Image {i + 1} is None")
 
         self.num_imgs = len(self.imgs)
-
         self.win_name = "Multi Pixel Viewer"
 
         self.panel_w = 400
@@ -28,7 +24,6 @@ class MultiImageViewer:
         self.top_h = 32
         self.status_h = 40
 
-        # 최대 3열. 1~3개: 1행, 4~6개: 2행, 7~9개: 3행
         self.cols = min(3, self.num_imgs)
         self.rows = (self.num_imgs + self.cols - 1) // self.cols
 
@@ -60,40 +55,21 @@ class MultiImageViewer:
         cv.setMouseCallback(self.win_name, self.on_mouse)
 
     @classmethod
-    def from_paths(cls, *paths, sync_view=True):
-        if len(paths) < 1 or len(paths) > 9:
-            raise ValueError("from_paths supports 1 to 9 paths")
-
-        imgs = []
-
-        for path in paths:
-            img = cv.imread(path, cv.IMREAD_UNCHANGED)
-
-            if img is None:
-                raise FileNotFoundError(path)
-
-            imgs.append(img)
-
-        return cls(imgs, sync_view=sync_view)
-
-    @classmethod
     def from_images(cls, *imgs, sync_view=True):
         return cls(list(imgs), sync_view=sync_view)
 
+    def update_images(self, *imgs):
+        if len(imgs) != self.num_imgs:
+            raise ValueError("Number of images must be same as initial viewer")
+
+        for i, img in enumerate(imgs):
+            if img is None:
+                raise ValueError(f"Image {i + 1} is None")
+
+        self.imgs = list(imgs)
+
     @staticmethod
     def to_display_bgr(img):
-        """
-        원본 이미지는 그대로 두고, 화면 출력용으로만 BGR 변환.
-
-        지원:
-        - Gray: (H, W) -> BGR
-        - Gray: (H, W, 1) -> BGR
-        - BGR: (H, W, 3) -> 그대로
-        - BGRA: (H, W, 4) -> BGR
-        """
-        if img is None:
-            return None
-
         if len(img.shape) == 2:
             return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
@@ -136,10 +112,8 @@ class MultiImageViewer:
     def get_panel_rect(self, panel_idx):
         row = panel_idx // self.cols
         col = panel_idx % self.cols
-
         x0 = col * self.panel_w
         y0 = self.top_h + row * self.panel_h
-
         return x0, y0
 
     def get_panel_index(self, sx, sy):
@@ -166,26 +140,8 @@ class MultiImageViewer:
         return idx
 
     def put_pixel_text(self, img, text, org, scale=0.32):
-        cv.putText(
-            img,
-            text,
-            org,
-            cv.FONT_HERSHEY_SIMPLEX,
-            scale,
-            (0, 0, 0),
-            2,
-            cv.LINE_AA
-        )
-        cv.putText(
-            img,
-            text,
-            org,
-            cv.FONT_HERSHEY_SIMPLEX,
-            scale,
-            (255, 255, 255),
-            1,
-            cv.LINE_AA
-        )
+        cv.putText(img, text, org, cv.FONT_HERSHEY_SIMPLEX, scale, (0, 0, 0), 2, cv.LINE_AA)
+        cv.putText(img, text, org, cv.FONT_HERSHEY_SIMPLEX, scale, (255, 255, 255), 1, cv.LINE_AA)
 
     def screen_to_image(self, sx, sy, panel_idx):
         panel_x0, panel_y0 = self.get_panel_rect(panel_idx)
@@ -200,7 +156,6 @@ class MultiImageViewer:
 
     def clamp_panel(self, panel_idx):
         h, w = self.imgs[panel_idx].shape[:2]
-
         self.center_x[panel_idx] = max(0, min(self.center_x[panel_idx], w - 1))
         self.center_y[panel_idx] = max(0, min(self.center_y[panel_idx], h - 1))
 
@@ -257,12 +212,7 @@ class MultiImageViewer:
             before = self.screen_to_image(x, y, panel_idx)
 
             old_zoom = self.zoom[panel_idx]
-
-            if flags > 0:
-                new_zoom = old_zoom * 1.25
-            else:
-                new_zoom = old_zoom / 1.25
-
+            new_zoom = old_zoom * 1.25 if flags > 0 else old_zoom / 1.25
             new_zoom = max(self.min_zoom, min(new_zoom, self.max_zoom))
 
             if self.sync_view:
@@ -344,13 +294,7 @@ class MultiImageViewer:
                 start_y = sy + int((zoom - total_height) / 2)
 
                 for i, value in enumerate(values):
-                    text_size, _ = cv.getTextSize(
-                        value,
-                        cv.FONT_HERSHEY_SIMPLEX,
-                        scale,
-                        1
-                    )
-
+                    text_size, _ = cv.getTextSize(value, cv.FONT_HERSHEY_SIMPLEX, scale, 1)
                     text_w = text_size[0]
                     text_h = text_size[1]
 
@@ -406,17 +350,7 @@ class MultiImageViewer:
 
             panel[cy0:cy1, cx0:cx1] = resized_display[ry0:ry1, rx0:rx1]
 
-        self.draw_grid_and_values(
-            panel,
-            img,
-            panel_idx,
-            x0,
-            y0,
-            src_x0,
-            src_y0,
-            src_x1,
-            src_y1
-        )
+        self.draw_grid_and_values(panel, img, panel_idx, x0, y0, src_x0, src_y0, src_x1, src_y1)
 
     def draw_top_bar(self, canvas):
         canvas[0:self.top_h, :] = 30
@@ -424,38 +358,15 @@ class MultiImageViewer:
         sync_text = "ON" if self.sync_view else "OFF"
         text = f"images={self.num_imgs} | layout={self.rows}x{self.cols} | drag: pan | wheel: zoom | t: sync {sync_text} | r: reset | q/esc: quit"
 
-        cv.putText(
-            canvas,
-            text,
-            (10, 23),
-            cv.FONT_HERSHEY_SIMPLEX,
-            0.52,
-            (255, 255, 255),
-            1,
-            cv.LINE_AA
-        )
+        cv.putText(canvas, text, (10, 23), cv.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1, cv.LINE_AA)
 
-        # 세로 구분선
         for c in range(1, self.cols):
             x = c * self.panel_w
-            cv.line(
-                canvas,
-                (x, self.top_h),
-                (x, self.top_h + self.panel_h * self.rows),
-                (180, 180, 180),
-                1
-            )
+            cv.line(canvas, (x, self.top_h), (x, self.top_h + self.panel_h * self.rows), (180, 180, 180), 1)
 
-        # 가로 구분선
         for r in range(1, self.rows):
             y = self.top_h + r * self.panel_h
-            cv.line(
-                canvas,
-                (0, y),
-                (self.win_w, y),
-                (180, 180, 180),
-                1
-            )
+            cv.line(canvas, (0, y), (self.win_w, y), (180, 180, 180), 1)
 
     def draw_status_bar(self, canvas):
         y0 = self.top_h + self.panel_h * self.rows
@@ -495,32 +406,14 @@ class MultiImageViewer:
         x = max(10, self.win_w - text_size[0] - 15)
         y = y0 + 27
 
-        cv.putText(
-            canvas,
-            text,
-            (x, y),
-            cv.FONT_HERSHEY_SIMPLEX,
-            0.52,
-            (255, 255, 255),
-            1,
-            cv.LINE_AA
-        )
+        cv.putText(canvas, text, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1, cv.LINE_AA)
 
     def draw_panel_labels(self, canvas):
         for i in range(self.num_imgs):
             x0, y0 = self.get_panel_rect(i)
             text = f"View {i + 1}"
 
-            cv.putText(
-                canvas,
-                text,
-                (x0 + 10, y0 + 25),
-                cv.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (255, 255, 255),
-                1,
-                cv.LINE_AA
-            )
+            cv.putText(canvas, text, (x0 + 10, y0 + 25), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1, cv.LINE_AA)
 
     def draw(self):
         canvas = np.full((self.win_h, self.win_w, 3), 40, dtype=np.uint8)
@@ -542,48 +435,64 @@ class MultiImageViewer:
             self.center_y[i] = h / 2
             self.clamp_panel(i)
 
-    def run(self):
-        while True:
-            self.draw()
-            key = cv.waitKey(16) & 0xFF
-
-            if key == ord("q") or key == 27:
-                break
-
-            if key == ord("r"):
-                self.reset()
-
-            if key == ord("t"):
-                self.sync_view = not self.sync_view
-
-            if key == 25:  # Ctrl + Y
-                if self.sync_view:
-                    self.sync_view = False
-                else:
-                    panel_idx = self.get_panel_index(self.mouse_x, self.mouse_y)
-
-                    if panel_idx is None:
-                        panel_idx = 0
-
-                    self.copy_view_to_others(panel_idx)
-                    self.sync_view = True
-
-        cv.destroyAllWindows()
-
 
 if __name__ == "__main__":
-    viewer = MultiImageViewer.from_paths(
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        "data/cat.png",
-        sync_view=False
-    )
+    cap = cv.VideoCapture(0)
 
-    viewer.run()
- 
+    if not cap.isOpened():
+        print("Camera open failed")
+        exit()
+
+    ret, frame = cap.read()
+
+    if not ret:
+        print("Frame read failed")
+        cap.release()
+        exit()
+
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    harris_map = np.zeros_like(gray, dtype=np.uint8)
+
+    viewer = MultiImageViewer.from_images(frame, harris_map, sync_view=False)
+
+    while True:
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Frame read failed")
+            break
+
+        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        gray_f32 = np.float32(gray)
+
+        harris_info = cv.cornerHarris(gray_f32, 2, 3, 0.04)
+        harris = cv.dilate(harris_info, None)
+
+        display_frame = frame.copy()
+
+        max_value = harris.max()
+
+        if max_value != 0:
+            display_frame[harris > 0.01 * max_value] = [0, 0, 255]
+
+            harris_map = harris / max_value * 255
+            harris_map = np.uint8(harris_map)
+        else:
+            harris_map = np.zeros_like(gray, dtype=np.uint8)
+
+        viewer.update_images(display_frame, harris_map)
+        viewer.draw()
+
+        key = cv.waitKey(1) & 0xFF
+
+        if key == ord("q") or key == 27:
+            break
+
+        if key == ord("r"):
+            viewer.reset()
+
+        if key == ord("t"):
+            viewer.sync_view = not viewer.sync_view
+
+    cap.release()
+    cv.destroyAllWindows()
