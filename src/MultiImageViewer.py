@@ -1,9 +1,11 @@
 import cv2 as cv
 import numpy as np
+import os
+from datetime import datetime
 
 
 class MultiImageViewer:
-    def __init__(self, imgs, sync_view=True):
+    def __init__(self, imgs, sync_view=True, save_dir="saved_images"):
         if not isinstance(imgs, (list, tuple)):
             raise TypeError("imgs must be a list or tuple")
 
@@ -50,13 +52,18 @@ class MultiImageViewer:
         self.pixel_value_zoom_threshold = 35.0
         self.max_text_pixels = 600
 
+        self.save_dir = save_dir
+        self.last_canvas = None
+        self.last_save_message = ""
+        os.makedirs(self.save_dir, exist_ok=True)
+
         cv.namedWindow(self.win_name, cv.WINDOW_NORMAL)
         cv.resizeWindow(self.win_name, self.win_w, self.win_h)
         cv.setMouseCallback(self.win_name, self.on_mouse)
 
     @classmethod
-    def from_images(cls, *imgs, sync_view=True):
-        return cls(list(imgs), sync_view=sync_view)
+    def from_images(cls, *imgs, sync_view=True, save_dir="saved_images"):
+        return cls(list(imgs), sync_view=sync_view, save_dir=save_dir)
 
     def update_images(self, *imgs):
         if len(imgs) != self.num_imgs:
@@ -356,7 +363,11 @@ class MultiImageViewer:
         canvas[0:self.top_h, :] = 30
 
         sync_text = "ON" if self.sync_view else "OFF"
-        text = f"images={self.num_imgs} | layout={self.rows}x{self.cols} | drag: pan | wheel: zoom | t: sync {sync_text} | r: reset | q/esc: quit"
+        text = (
+            f"images={self.num_imgs} | layout={self.rows}x{self.cols} | "
+            f"drag: pan | wheel: zoom | t: sync {sync_text} | "
+            f"r: reset | Ctrl+S: save | q/esc: quit"
+        )
 
         cv.putText(canvas, text, (10, 23), cv.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1, cv.LINE_AA)
 
@@ -402,6 +413,9 @@ class MultiImageViewer:
                     f"sync={'ON' if self.sync_view else 'OFF'}"
                 )
 
+        if self.last_save_message:
+            text = text + " | " + self.last_save_message
+
         text_size, _ = cv.getTextSize(text, cv.FONT_HERSHEY_SIMPLEX, 0.52, 1)
         x = max(10, self.win_w - text_size[0] - 15)
         y = y0 + 27
@@ -412,7 +426,6 @@ class MultiImageViewer:
         for i in range(self.num_imgs):
             x0, y0 = self.get_panel_rect(i)
             text = f"View {i + 1}"
-
             cv.putText(canvas, text, (x0 + 10, y0 + 25), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1, cv.LINE_AA)
 
     def draw(self):
@@ -425,7 +438,26 @@ class MultiImageViewer:
         self.draw_panel_labels(canvas)
         self.draw_status_bar(canvas)
 
+        self.last_canvas = canvas.copy()
         cv.imshow(self.win_name, canvas)
+
+    def save_current_view(self):
+        if self.last_canvas is None:
+            print("No canvas to save")
+            self.last_save_message = "No canvas to save"
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(self.save_dir, f"multi_view_{timestamp}.png")
+
+        ok = cv.imwrite(path, self.last_canvas)
+
+        if ok:
+            print(f"Saved: {path}")
+            self.last_save_message = f"Saved: {path}"
+        else:
+            print("Save failed")
+            self.last_save_message = "Save failed"
 
     def reset(self):
         for i in range(self.num_imgs):
@@ -453,7 +485,12 @@ if __name__ == "__main__":
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     harris_map = np.zeros_like(gray, dtype=np.uint8)
 
-    viewer = MultiImageViewer.from_images(frame, harris_map, sync_view=False)
+    viewer = MultiImageViewer.from_images(
+        frame,
+        harris_map,
+        sync_view=False,
+        save_dir="saved_images"
+    )
 
     while True:
         ret, frame = cap.read()
@@ -493,6 +530,10 @@ if __name__ == "__main__":
 
         if key == ord("t"):
             viewer.sync_view = not viewer.sync_view
+
+        # Ctrl + S
+        if key == 19:
+            viewer.save_current_view()
 
     cap.release()
     cv.destroyAllWindows()
